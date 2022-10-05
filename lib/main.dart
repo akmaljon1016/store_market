@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:store_market/model/tovar.dart';
+import 'package:store_market/network/network.dart';
 
 import 'cardview.dart';
 
@@ -22,72 +24,6 @@ class MyApp extends StatelessWidget {
 }
 
 class MyHomePage extends StatefulWidget {
-  final List<String> items = [
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy",
-    "tumanniy"
-  ];
-
   MyHomePage({super.key, required this.title});
 
   final String title;
@@ -98,6 +34,21 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  late Future<Tovar> items;
+  final scrollController = ScrollController();
+  int page = 1;
+  bool isLoadingMore = false;
+   List zapchastlar =[];
+
+  @override
+  void initState() {
+    super.initState();
+    items = Network().getItems(page);
+    zapchastlar=Network().tovarlar;
+    scrollController.addListener(_scrollListener);
+    print(zapchastlar);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -131,6 +82,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     Row(
                       children: [
                         Expanded(
+                          flex: 2,
                           child: Container(
                             height: 40.0,
                             decoration: BoxDecoration(
@@ -139,12 +91,13 @@ class _MyHomePageState extends State<MyHomePage> {
                                 color: Colors.blue),
                             child: const Center(
                                 child: Text(
-                              "Id",
+                              "Nomi",
                               style: TextStyle(color: Colors.white),
                             )),
                           ),
                         ),
                         Expanded(
+                          flex: 1,
                           child: Container(
                             height: 40.0,
                             decoration: BoxDecoration(
@@ -153,12 +106,13 @@ class _MyHomePageState extends State<MyHomePage> {
                                 color: Colors.blue),
                             child: const Center(
                                 child: Text(
-                              "Name",
+                              "Olish Narxi",
                               style: TextStyle(color: Colors.white),
                             )),
                           ),
                         ),
                         Expanded(
+                          flex: 1,
                           child: Container(
                             height: 40.0,
                             decoration: BoxDecoration(
@@ -167,12 +121,13 @@ class _MyHomePageState extends State<MyHomePage> {
                                 color: Colors.blue),
                             child: const Center(
                                 child: Text(
-                              "Price",
+                              "Foiz",
                               style: TextStyle(color: Colors.white),
                             )),
                           ),
                         ),
                         Expanded(
+                          flex: 1,
                           child: Container(
                             height: 40.0,
                             decoration: BoxDecoration(
@@ -181,7 +136,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                 color: Colors.blue),
                             child: const Center(
                                 child: Text(
-                              "Count",
+                              "Sotish Narxi ",
                               style: TextStyle(color: Colors.white),
                             )),
                           ),
@@ -189,13 +144,16 @@ class _MyHomePageState extends State<MyHomePage> {
                       ],
                     ),
                     Container(
-                      height: MediaQuery.of(context).size.height-188,
-                      child: ListView.builder(
-                          itemCount: widget.items.length,
-                          itemBuilder: (BuildContext context, int index) {
-                            return CardView(widget.items[index]);
-                          }),
-                    )
+                        height: MediaQuery.of(context).size.height - 188,
+                        child: ListView.builder(
+                            padding: const EdgeInsets.only(bottom: 12.0),
+                            controller: scrollController,
+                            itemCount: isLoadingMore
+                                ? zapchastlar.length + 1
+                                : zapchastlar.length,
+                            itemBuilder: (BuildContext context, int index) {
+                              return CardView(zapchastlar[index]);
+                            }))
                   ],
                 ),
               ),
@@ -204,5 +162,17 @@ class _MyHomePageState extends State<MyHomePage> {
         ],
       ),
     );
+  }
+
+  Future<void> _scrollListener() async {
+    if (scrollController.position.pixels ==
+        scrollController.position.maxScrollExtent) {
+      page = page + 1;
+      setState(() {
+        isLoadingMore = true;
+      });
+      await Network().getItems(page);
+      isLoadingMore = false;
+    }
   }
 }
