@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart';
+import 'package:store_market/model/searchtovar.dart';
 import 'package:store_market/model/tovar.dart';
 import 'package:store_market/network/network.dart';
 
 import 'cardview.dart';
+import 'model/datum.dart';
 
 void main() {
   runApp(const MyApp());
@@ -30,23 +33,23 @@ class MyHomePage extends StatefulWidget {
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
-  var myText = TextEditingController();
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  late Future<Tovar> items;
+  //late Future<Tovar> items;
   final scrollController = ScrollController();
   int page = 1;
   bool isLoadingMore = false;
-   List zapchastlar =[];
+  List<Datum> zapchastlar = [];
+  var myText = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    items = Network().getItems(page);
-    zapchastlar=Network().tovarlar;
+//    items = Network().getItems(page);
+    getItems(1);
     scrollController.addListener(_scrollListener);
-    print(zapchastlar);
+    myText.addListener(handleChanges);
   }
 
   @override
@@ -62,12 +65,12 @@ class _MyHomePageState extends State<MyHomePage> {
             child: Container(
               height: 60,
               child: TextField(
+                controller: myText,
                 decoration: InputDecoration(
                     border: OutlineInputBorder(),
                     labelText: "qidirish",
                     suffixIcon: IconButton(
-                        onPressed: widget.myText.clear,
-                        icon: Icon(Icons.clear))),
+                        onPressed: myText.clear, icon: Icon(Icons.clear))),
               ),
             ),
           ),
@@ -76,13 +79,13 @@ class _MyHomePageState extends State<MyHomePage> {
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: SizedBox(
-                width: MediaQuery.of(context).size.width + 100,
+                width: MediaQuery.of(context).size.width,
                 child: Column(
                   children: [
                     Row(
                       children: [
                         Expanded(
-                          flex: 2,
+                          flex: 4,
                           child: Container(
                             height: 40.0,
                             decoration: BoxDecoration(
@@ -97,7 +100,7 @@ class _MyHomePageState extends State<MyHomePage> {
                           ),
                         ),
                         Expanded(
-                          flex: 1,
+                          flex: 3,
                           child: Container(
                             height: 40.0,
                             decoration: BoxDecoration(
@@ -127,7 +130,7 @@ class _MyHomePageState extends State<MyHomePage> {
                           ),
                         ),
                         Expanded(
-                          flex: 1,
+                          flex: 3,
                           child: Container(
                             height: 40.0,
                             decoration: BoxDecoration(
@@ -152,7 +155,16 @@ class _MyHomePageState extends State<MyHomePage> {
                                 ? zapchastlar.length + 1
                                 : zapchastlar.length,
                             itemBuilder: (BuildContext context, int index) {
-                              return CardView(zapchastlar[index]);
+                              if (index < zapchastlar.length) {
+                                return CardView(zapchastlar[index]);
+                              } else {
+                                return const Padding(
+                                  padding: EdgeInsets.only(right: 100),
+                                  child: Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                );
+                              }
                             }))
                   ],
                 ),
@@ -164,6 +176,33 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
+  Future<void> getItems(int page) async {
+    var url = "http://umidhoja.ga/api/tovarlar?page=${page}";
+    var response = await get(Uri.parse(url));
+    if (response.statusCode == 200) {
+      final json = tovarFromJson(response.body);
+      setState(() {
+        zapchastlar = zapchastlar + json.data;
+      });
+    } else {
+      print("object");
+    }
+    throw Exception("");
+  }
+
+  Future<void> search(String text, int page) async {
+    var url = "http://umidhoja.ga/api/search?query=${text}";
+    print(url);
+    var response = await get(Uri.parse(url));
+    if (response.statusCode == 200) {
+      final json = searchFromJson(response.body);
+      print(response.body);
+      setState(() {
+        zapchastlar = json.data;
+      });
+    }
+  }
+
   Future<void> _scrollListener() async {
     if (scrollController.position.pixels ==
         scrollController.position.maxScrollExtent) {
@@ -171,8 +210,16 @@ class _MyHomePageState extends State<MyHomePage> {
       setState(() {
         isLoadingMore = true;
       });
-      await Network().getItems(page);
+      await getItems(page);
       isLoadingMore = false;
+    }
+  }
+
+  void handleChanges() {
+    if (myText.value.text.toString() == "") {
+      getItems(1);
+    } else {
+      search(myText.value.text.toString(), page);
     }
   }
 }

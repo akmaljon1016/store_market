@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'model/datum.dart';
 import 'model/tovar.dart';
 
 Widget CardView(Datum item) {
